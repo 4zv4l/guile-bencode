@@ -21,6 +21,10 @@
 
 (define (read-number p)
   (define acc "")
+  (define neg? (lookahead-char p))
+  (if (char=? neg? #\-)
+      (begin (set! acc (string-append acc (string neg?)))
+	     (read-char p)))
   (do ((char (lookahead-char p) (lookahead-char p)))
       ((or (eof-object? char) (not (char-numeric? char))))
     (set! acc (string-append acc (string char)))
@@ -37,6 +41,7 @@
 
 (define (bencode->string p)
   (define length (read-number p))
+  (if (< length 0) (error "string length must be equal or higher than 0"))
   (unless (char=? (read-char p) #\:)
     (error "Expected ':' after string length"))
   (get-string-n p length))
