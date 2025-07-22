@@ -1,0 +1,87 @@
+;; Basic Bencode/Bdecode lib for Guile
+(define-module (sibl bencode)
+  #:use-module (ice-9 textual-ports)
+  #:export (bencode bdecode))
+
+(define (string->bencode s)
+  (string-append (number->string (string-length s)) ":" s))
+
+(define (number->bencode n)
+  (string-append "i" (number->string n) "e"))
+
+(define (list->bencode l)
+  (string-append "l"(apply string-append (map bencode l)) "e"))
+
+(define (hash->bencode h)
+  (let* ((keys (sort (hash-map->list (lambda (k v) k) h) string<?))
+         (parts (map (lambda (key)
+                       (string-append (bencode key) (bencode (hash-ref h key))))
+                     keys)))
+    (string-append "d" (apply string-append parts) "e")))
+
+(define (read-number p)
+  (define acc "")
+  (do ((char (lookahead-char p) (lookahead-char p)))
+      ((or (eof-object? char) (not (char-numeric? char))))
+    (set! acc (string-append acc (string char)))
+    (read-char p))
+  (string->number acc))
+
+(define (bencode->number p)
+  (unless (char=? (read-char p) #\i)
+    (error "Expected 'i' for number"))
+  (define n (read-number p))
+  (unless (char=? (read-char p) #\e)
+    (error "Expected 'e' to end number"))
+  n)
+
+(define (bencode->string p)
+  (define length (read-number p))
+  (unless (char=? (read-char p) #\:)
+    (error "Expected ':' after string length"))
+  (get-string-n p length))
+
+(define (bencode->list p)
+  (define l '())
+  (unless (char=? (read-char p) #\l)
+    (error "Expected 'l' for list"))
+  (do ((char (lookahead-char p) (lookahead-char p)))
+      ((or (eof-object? char) (char=? char #\e)))
+    (set! l (cons (bdecode p) l)))
+(unless (char=? (read-char p) #\e)
+    (error "Expected 'e' to end list"))
+  (reverse l))
+
+(define (bencode->hash p)
+  (define h (make-hash-table))
+  (unless (char=? (read-char p) #\d)
+    (error "Expected 'd' for hash"))
+  (do ((char (lookahead-char p) (lookahead-char p)))
+      ((or (eof-object? char) (char=? char #\e)))
+    (let ((k (catch #t (lambda () (bencode->string p)) (lambda (k . v) (error "expected string for hash key"))))
+	  (v (bdecode p)))
+      (hash-set! h k v)))
+  (unless (char=? (read-char p) #\e)
+    (error "Expected 'e' to end hash"))
+  h)
+
+(define-public (bencode x)
+  "encode any string, number, list, hash-table to bencode string"
+  (cond
+    ((string? x) (string->bencode x))
+    ((number? x) (number->bencode x))
+    ((list? x) (list->bencode x))
+    ((hash-table? x) (hash->bencode x))
+    (else (error "Unsupported type for bencode" x))))
+
+;; can be called with a file or a string with (call-with-input-{string/file})
+(define-public (bdecode p)
+  "decode a bencoded stream"
+  (define char (lookahead-char p))
+  (cond 
+   ((char=? char #\i) (bencode->number p))
+   ((char=? char #\l) (bencode->list p))
+   ((char=? char #\d) (bencode->hash p))
+   ((char-numeric? char) (bencode->string p))
+   ((eof-object? char) (error "Empty or invalid bencoded string"))
+   (else (error "Unexpected value from stream" char))))
