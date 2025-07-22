@@ -32,5 +32,5 @@ d3:agei99e2:cnl2:BE2:CN2:VT2:THe4:name5:4zv4le
 
 # Doc
 
-`bencode val`: encode `val` to bencode, `val` must be a string, number, list or hash-table.
+`bencode val`: encode `val` to bencode, `val` must be a string, number, list or hash-table.  
 `bdecode port`: decode bencode stream from `port`.
