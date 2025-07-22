@@ -48,7 +48,7 @@
   (do ((char (lookahead-char p) (lookahead-char p)))
       ((or (eof-object? char) (char=? char #\e)))
     (set! l (cons (bdecode p) l)))
-(unless (char=? (read-char p) #\e)
+  (unless (char=? (read-char p) #\e)
     (error "Expected 'e' to end list"))
   (reverse l))
 
@@ -68,11 +68,11 @@
 (define-public (bencode x)
   "encode any string, number, list, hash-table to bencode string"
   (cond
-    ((string? x) (string->bencode x))
-    ((number? x) (number->bencode x))
-    ((list? x) (list->bencode x))
-    ((hash-table? x) (hash->bencode x))
-    (else (error "Unsupported type for bencode" x))))
+   ((string? x) (string->bencode x))
+   ((number? x) (number->bencode x))
+   ((list? x) (list->bencode x))
+   ((hash-table? x) (hash->bencode x))
+   (else (error "Unsupported type for bencode" x))))
 
 ;; can be called with a file or a string with (call-with-input-{string/file})
 (define-public (bdecode p)
