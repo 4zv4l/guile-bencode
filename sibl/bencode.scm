@@ -70,7 +70,7 @@
     (error "Expected 'e' to end hash"))
   h)
 
-(define-public (bencode x)
+(define (bencode x)
   "encode any string, number, list, hash-table to bencode string"
   (cond
    ((string? x) (string->bencode x))
@@ -80,7 +80,7 @@
    (else (error "Unsupported type for bencode" x))))
 
 ;; can be called with a file or a string with (call-with-input-{string/file})
-(define-public (bdecode p)
+(define (bdecode p)
   "decode a bencoded stream"
   (define char (lookahead-char p))
   (cond 
